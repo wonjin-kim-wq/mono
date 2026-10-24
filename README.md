@@ -9,36 +9,47 @@ npm ci
 npm run dev
 ```
 
-http://localhost:3000 에서 확인합니다. SoundTouch의 브라우저 모듈은 실행 전 자동으로 준비됩니다.
+http://localhost:3000 에서 확인합니다.
 
-## 반주와 키 조절
+## 고품질 키 변경
 
-- 제공된 −3키 MP3를 +3반음 올린 `media/only-you-original.mp3`가 남자 원키(0)입니다.
-- 남자 키는 원키, 여자 키는 남자 원키보다 +5반음 높은 기준입니다.
-- 각 기준에서 −5~+5반음을 조절할 수 있습니다. 여자 기준 +5는 남자 원키보다 +10반음입니다.
-- 재생 속도는 1배속으로 유지하고 SoundTouch AudioWorklet에서 음정만 변경합니다.
-- 현재 곡과 설정은 둘러보기 패널, 하단 컨트롤, 키 조절 팝업에서 동기화됩니다.
-- 새 파일을 올릴 때 원본 남자/여자 키를 선택합니다. 업로드한 파일에도 같은 키 조절을 적용합니다.
-- 곡을 바꾸면 해당 곡의 세션 내 설정으로 복원합니다. 초기화는 선택한 남자/여자 기준의 0키로 돌아갑니다.
+- Rubber Band 3.3.0 WASM의 **R3 Finer / PitchHighQuality / ChannelsTogether** 사용.
+- 원본 메타데이터에서 샘플레이트를 읽고 같은 레이트로 디코딩합니다.
+- Worker에서 전체 곡을 분석하고 렌더링한 뒤 완성된 AudioBuffer를 재생합니다. 실시간 DSP를 사용하지 않습니다.
+- 16,384프레임 입력 블록 사이에 엔진 상태와 내부 오버랩을 유지합니다.
+- 템포는 1배속, 출력 길이는 원본과 동일합니다. 피크는 전체 곡 게인으로 −1.1dBFS 이하로 제한합니다.
+- 재생 중 키를 바꾸면 기존 소리를 유지하고, 완료 시 같은 위치에 18ms 페이드로 전환합니다.
+- 렌더링 진행률, 최신 요청 취소, 메모리 160MiB 및 IndexedDB 384MiB LRU 캐시를 제공합니다. 메모리 캐시된 키는 즉시 전환합니다. 오래된 키는 용량 한도에 따라 제거될 수 있습니다.
 
-이 반주 파일과 커버는 사이트에 포함되어 모든 방문자에게 제공됩니다. 사용자가 웹앱에서 추가한 파일은 IndexedDB에, 좋아요·문의는 localStorage에 저장됩니다. 추가 업로드와 문의는 현재 브라우저에만 보관되며 서버 동기화나 운영자 전송은 지원하지 않습니다.
+버튼은 **원본 파일 대비 −6~+6반음**을 표시합니다. 남자·여자 버튼은 프리셋으로 유지하며, 여자 키는 남자보다 +5반음 기준입니다. 프리셋을 포함한 총 이동량은 ±6 이내입니다. 초기화는 업로드한 원본의 0키로 돌아갑니다. 업로드 시 원본이 남자/여자 기준인지 선택합니다.
+
+등록 음원은 제공된 −3 파일을 Rubber Band R3 오프라인 +3으로 복원한 남자 원키입니다. 추가 업로드는 현재 브라우저 IndexedDB에, 좋아요·문의는 localStorage에 저장되며 서버 공유·운영자 전송은 하지 않습니다.
 
 ## 검증
 
 ```sh
 npm test
 npm run build
+# 장시간 실제 음원 검증에는 로컬 FFmpeg가 필요합니다.
+MONO_FFMPEG=/path/to/ffmpeg npm run validate:audio
 ```
 
-오디오 테스트는 실제 배포되는 Worklet에 440Hz 신호를 입력하여 −10, −5, 0, +5, +10반음의 출력 주파수와 유효 신호를 검사합니다. ±10은 원본 여자/남자 기준을 전환할 때 가능한 최대 이동량을 포함합니다. 앱은 HTTPS 또는 localhost와 AudioWorklet을 지원하는 최신 브라우저에서 동작합니다.
+- [수정 전 7개 항목 진단 및 설계](docs/dsp-diagnosis.md)
+- [3분 10초 MR의 +3 / −3 / +6 전체 곡 검증 로그](reports/audio-validation.json)
+- [제공 음원의 남자 원키 복원 로그](reports/master-restoration.json)
+
+자동 검증은 피크·길이·50ms 이상 무음 끊김·블록 경계 및 처음/끝 30초의 신호를 검사합니다. 주관적인 청감 동일성을 보장하는 검사는 아닙니다. 키 이동 폭이 클수록 음색 변화가 들릴 수 있으며 UI에도 안내합니다.
+
+브라우저 개발자 도구의 `[mono:audio-render]` JSON 로그에는 피크, 출력 길이, 처리 시간, 원본/재생 샘플레이트, 캐시 여부와 준비 시간이 남습니다. 예를 들어 원본 44.1kHz/장치 48kHz 환경에서도 DSP는 44.1kHz로 처리하고 최종 재생 시에만 브라우저가 장치 레이트로 변환합니다.
 
 ## 배포
 
-Vercel은 `npm run build`로 생성한 `dist/`를 배포합니다. GitHub `main` 브랜치 푸시는 프로덕션 자동 배포로 연결됩니다.
+Vercel은 `npm run build`로 만든 `dist/`를 배포합니다. GitHub `main` 푸시에 연결되어 있습니다.
 
 - 사이트: https://mono-six-hazel.vercel.app
-- `build.mjs`: 앱, 음원, 커버, SoundTouch 모듈 복사
-- `vercel.json`: 정적 빌드 및 응답 헤더 설정
-- `server.mjs`: 로컬 서버와 오디오 Range 요청 지원
+- `audio/render.mjs`, `audio/worker.mjs`: 전체 곡 DSP
+- `audio/decode.mjs`, `audio/cache.mjs`: 원본 레이트 디코딩과 캐시
+- `pitch.js`: 완료 버퍼 재생·취소·탐색·페이드
+- `prepare-audio.mjs`, `build.mjs`: WASM·라이선스·앱 파일 준비
 
-음정 처리는 [SoundTouchJS](https://github.com/cutterbl/SoundTouchJS)의 MPL-2.0 모듈을 사용하며 배포 파일에 라이선스를 포함합니다. 폰트는 Google Fonts, 추가 업로드의 기본 커버는 Unsplash에서 불러옵니다.
+Rubber Band 및 의존성 출처·라이선스는 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)를 참고하세요.

@@ -8,9 +8,15 @@
     "build": "node build.mjs",
     "predev": "node prepare-audio.mjs",
     "prestart": "node prepare-audio.mjs",
-    "test": "node prepare-audio.mjs && node --test tests/*.test.mjs"
+    "test": "node prepare-audio.mjs && node --test tests/*.test.mjs",
+    "validate:audio": "node scripts/validate-audio.mjs"
   },
   "dependencies": {
-    "@soundtouchjs/audio-worklet": "2.1.1"
-  }
+    "music-metadata": "11.16.1",
+    "rubberband-wasm": "3.3.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.12"
+  },
+  "type": "module"
 }

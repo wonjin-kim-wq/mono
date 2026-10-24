@@ -1,47 +1,39 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import vm from 'node:vm';
+import { readFile } from 'node:fs/promises';
+import { createRenderer, renderPitch, finalize } from '../audio/render.mjs';
+import { BufferCache } from '../audio/cache.mjs';
 
-const processorSource = readFileSync(new URL('../vendor/soundtouch/soundtouch-processor.js', import.meta.url), 'utf8');
-const sampleRate = 44100;
-
-function renderTone(semitones) {
-  let Processor;
-  const scope = {
-    sampleRate,
-    console,
-    AudioWorkletProcessor: class { port = { postMessage() {}, onmessage: null }; },
-    registerProcessor(name, type) { Processor = type; },
-  };
-  vm.runInNewContext(processorSource, scope);
-  const processor = new Processor();
-  const output = new Float32Array(Math.floor(sampleRate * 3 / 128) * 128);
-  for (let start = 0; start < output.length; start += 128) {
-    const input = Float32Array.from({ length: 128 }, (_, i) => .3 * Math.sin(2 * Math.PI * 440 * (start + i) / sampleRate));
-    const left = new Float32Array(128), right = new Float32Array(128);
-    assert.equal(processor.process([[input, input]], [[left, right]], {
-      pitch: new Float32Array([1]),
-      pitchSemitones: new Float32Array([semitones]),
-      playbackRate: new Float32Array([1]),
-    }), true);
-    output.set(left, start);
-  }
-  const settled = output.subarray(sampleRate, sampleRate * 2.5);
-  let crossings = 0, energy = 0;
-  for (let i = 1; i < settled.length; i++) {
-    assert.ok(Number.isFinite(settled[i]), 'output must contain finite samples');
-    if (settled[i - 1] <= 0 && settled[i] > 0) crossings++;
-    energy += settled[i] ** 2;
-  }
-  return { frequency: crossings * sampleRate / settled.length, rms: Math.sqrt(energy / settled.length) };
+const api=await createRenderer(await readFile('vendor/rubberband/rubberband.wasm'));
+function frequency(channel,sampleRate){
+ let count=0;const start=Math.floor(sampleRate*.5),end=Math.floor(sampleRate*2.5);
+ for(let i=start+1;i<end;i++)if(channel[i-1]<=0&&channel[i]>0)count++;
+ return count*sampleRate/(end-start);
 }
-
-for (const semitones of [-10, -5, 0, 5, 10]) {
-  test(`${semitones} semitones changes 440 Hz by the requested interval at a constant playback rate`, () => {
-    const { frequency, rms } = renderTone(semitones);
-    const expected = 440 * 2 ** (semitones / 12);
-    assert.ok(Math.abs(frequency - expected) < 2, `${frequency.toFixed(2)} Hz, expected ${expected.toFixed(2)} Hz`);
-    assert.ok(rms > .1 && rms < .4, `audible, bounded output: ${rms}`);
-  });
+for(const sampleRate of [44100,48000])for(const semitones of [-3,3,6]){
+ test(`${sampleRate} Hz / ${semitones} semitones: pitch, stereo, native rate, duration, headroom`,()=>{
+  const tone=Float32Array.from({length:sampleRate*3},(_,i)=>1.2*Math.sin(2*Math.PI*440*i/sampleRate));
+  const result=renderPitch(api,{channels:[tone,tone.slice()],sampleRate,semitones});
+  assert.equal(result.sampleRate,sampleRate);
+  assert.equal(result.metrics.engineFrames,tone.length);assert.equal(result.metrics.lengthErrorMs,0);
+  assert.ok(Math.abs(frequency(result.channels[0],sampleRate)-440*2**(semitones/12))<1);
+  assert.ok(result.metrics.peakDbfs<=-1);
+  for(let i=0;i<tone.length;i++)assert.ok(Math.abs(result.channels[0][i]-result.channels[1][i])<1e-6);
+ });
 }
+test('zero key keeps samples intact except global headroom and 5 ms edge fades',()=>{
+ const tone=new Float32Array(44100).fill(.5);
+ const result=renderPitch(api,{channels:[tone],sampleRate:44100,semitones:0});
+ assert.equal(result.channels[0][2000],.5);assert.equal(result.channels[0][0],0);assert.equal(result.channels[0].at(-1),0);
+});
+test('finite sample protection and hard range check',()=>{
+ assert.throws(()=>finalize([new Float32Array([NaN,0])],44100));
+ assert.throws(()=>renderPitch(api,{channels:[new Float32Array(1000)],sampleRate:44100,semitones:7}),RangeError);
+});
+test('LRU cache bounds bytes, reuses buffers, and evicts least-recently-used',()=>{
+ const cache=new BufferCache(24);
+ const record=id=>({buffer:{length:2,numberOfChannels:2,id},metrics:{}});
+ cache.set('a',record('a'));assert.equal(cache.get('a').buffer.id,'a');
+ cache.set('b',record('b'));assert.equal(cache.get('a'),undefined);assert.equal(cache.bytes,16);
+ cache.set('b',record('b2'));assert.equal(cache.bytes,16);assert.equal(cache.get('b').buffer.id,'b2');
+});

@@ -1,0 +1,16 @@
+import { readFile, mkdir, writeFile } from 'node:fs/promises';
+import { spawnSync } from 'node:child_process';
+import { createRenderer, renderPitch } from '../audio/render.mjs';
+import { decodeFile, writeWav, ffmpeg } from './audio-utils.mjs';
+const source=process.argv[2];
+if(!source)throw new Error('Usage: node scripts/restore-master.mjs <provided-minus-3.mp3>');
+const input=await decodeFile(source);
+const api=await createRenderer(await readFile('vendor/rubberband/rubberband.wasm'));
+console.log('Restoring provided −3 file with Rubber Band R3, offline +3…');
+const rendered=renderPitch(api,{...input,semitones:3});
+await writeWav('/tmp/mono-restored-master.wav',rendered.channels,rendered.sampleRate);
+const encoded=spawnSync(ffmpeg,['-v','error','-y','-i','/tmp/mono-restored-master.wav','-c:a','libmp3lame','-b:a','320k','-map_metadata','-1','-metadata','title=나에게 그대만이 (Inst.)','-metadata','artist=탑현','media/only-you-original.mp3']);
+if(encoded.status!==0)throw new Error(encoded.stderr.toString());
+await mkdir('reports',{recursive:true});
+await writeFile('reports/master-restoration.json',JSON.stringify(rendered.metrics,null,2)+'\n');
+console.log(rendered.metrics);

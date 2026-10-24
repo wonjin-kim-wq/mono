@@ -1,0 +1,131 @@
+{
+  "testedAt": "2026-10-24T11:42:45.565Z",
+  "source": "only-you-original.mp3",
+  "method": "Full-track R3 offline render; same engine module and options as browser worker",
+  "limits": "Automated checks measure continuity, levels, length and boundary behavior; they do not establish subjective perceptual equivalence of different song sections.",
+  "results": [
+    {
+      "engine": "rubberband-3.3.0-r3-offline-v1",
+      "semitones": 3,
+      "sampleRate": 44100,
+      "channels": 2,
+      "inputFrames": 8413056,
+      "engineFrames": 8413056,
+      "outputFrames": 8413056,
+      "durationSeconds": 190.77224489795918,
+      "lengthErrorMs": 0,
+      "engineLengthErrorMs": 0,
+      "processingMs": 42548,
+      "rawPeak": 0.8401598930358887,
+      "outputPeak": 0.8401598930358887,
+      "peakDbfs": -1.5127610869755932,
+      "gainDb": 0,
+      "beginning": {
+        "rms": 0.05104957892174768,
+        "peakDbfs": -8.152188372550608,
+        "derivativeRms": 0.006519207561332774,
+        "activeInputSilentOutput50msWindows": 0
+      },
+      "ending": {
+        "rms": 0.10406801062023172,
+        "peakDbfs": -1.6601799444831111,
+        "derivativeRms": 0.02509789424765071,
+        "activeInputSilentOutput50msWindows": 0
+      },
+      "whole": {
+        "rms": 0.0880756803887885,
+        "peakDbfs": -1.5127610869755932,
+        "derivativeRms": 0.016505802218880865,
+        "activeInputSilentOutput50msWindows": 0
+      },
+      "seams": {
+        "blockFrames": 16384,
+        "seamP99Jump": 0.06127668917179108,
+        "ordinaryP99Jump": 0.06651947274804115,
+        "maxSeamJump": 0.09184831380844116
+      }
+    },
+    {
+      "engine": "rubberband-3.3.0-r3-offline-v1",
+      "semitones": -3,
+      "sampleRate": 44100,
+      "channels": 2,
+      "inputFrames": 8413056,
+      "engineFrames": 8413056,
+      "outputFrames": 8413056,
+      "durationSeconds": 190.77224489795918,
+      "lengthErrorMs": 0,
+      "engineLengthErrorMs": 0,
+      "processingMs": 34377,
+      "rawPeak": 0.812921404838562,
+      "outputPeak": 0.812921404838562,
+      "peakDbfs": -1.799028819850855,
+      "gainDb": 0,
+      "beginning": {
+        "rms": 0.05090154483584965,
+        "peakDbfs": -7.067669869318736,
+        "derivativeRms": 0.004614457221264016,
+        "activeInputSilentOutput50msWindows": 0
+      },
+      "ending": {
+        "rms": 0.10341379532498658,
+        "peakDbfs": -1.799028819850855,
+        "derivativeRms": 0.01794212466304784,
+        "activeInputSilentOutput50msWindows": 0
+      },
+      "whole": {
+        "rms": 0.08762579487472368,
+        "peakDbfs": -1.799028819850855,
+        "derivativeRms": 0.01186379331505365,
+        "activeInputSilentOutput50msWindows": 0
+      },
+      "seams": {
+        "blockFrames": 16384,
+        "seamP99Jump": 0.04637259244918823,
+        "ordinaryP99Jump": 0.04749417304992676,
+        "maxSeamJump": 0.11181405186653137
+      }
+    },
+    {
+      "engine": "rubberband-3.3.0-r3-offline-v1",
+      "semitones": 6,
+      "sampleRate": 44100,
+      "channels": 2,
+      "inputFrames": 8413056,
+      "engineFrames": 8413056,
+      "outputFrames": 8413056,
+      "durationSeconds": 190.77224489795918,
+      "lengthErrorMs": 0,
+      "engineLengthErrorMs": 0,
+      "processingMs": 46293,
+      "rawPeak": 0.8579825162887573,
+      "outputPeak": 0.8579825162887573,
+      "peakDbfs": -1.3304312396851012,
+      "gainDb": 0,
+      "beginning": {
+        "rms": 0.05105644613966141,
+        "peakDbfs": -8.017824056817613,
+        "derivativeRms": 0.007633012757280299,
+        "activeInputSilentOutput50msWindows": 0
+      },
+      "ending": {
+        "rms": 0.10392341621357798,
+        "peakDbfs": -1.7143781712351363,
+        "derivativeRms": 0.028509836847650946,
+        "activeInputSilentOutput50msWindows": 0
+      },
+      "whole": {
+        "rms": 0.08797159020232938,
+        "peakDbfs": -1.3304312396851012,
+        "derivativeRms": 0.018677634609203315,
+        "activeInputSilentOutput50msWindows": 0
+      },
+      "seams": {
+        "blockFrames": 16384,
+        "seamP99Jump": 0.06941870599985123,
+        "ordinaryP99Jump": 0.07346011698246002,
+        "maxSeamJump": 0.1222161203622818
+      }
+    }
+  ]
+}
